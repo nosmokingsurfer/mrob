@@ -102,7 +102,7 @@ uint_t PlaneRegistration::solve(SolveMode mode, bool singleIteration)
             break;
         case SolveMode::GN_HESSIAN:
             time_profiles_.start();
-            solveIters_ = optimize(NEWTON_RAPHSON);
+            solveIters_ = Optimizer::solve(NEWTON_RAPHSON);
             time_profiles_.stop();
             break;
         case SolveMode::GN_CLAMPED_HESSIAN:
@@ -112,12 +112,12 @@ uint_t PlaneRegistration::solve(SolveMode mode, bool singleIteration)
             break;
         case SolveMode::LM_SPHER:
             time_profiles_.start();
-            solveIters_ = optimize(LEVENBERG_MARQUARDT_SPHER,1e-2);
+            solveIters_ = Optimizer::solve(LEVENBERG_MARQUARDT_SPHER,100,1e-2);
             time_profiles_.stop();
             break;
         case SolveMode::LM_ELLIP:
             time_profiles_.start();
-            solveIters_ = optimize(LEVENBERG_MARQUARDT_ELLIP,1e-2);
+            solveIters_ = Optimizer::solve(LEVENBERG_MARQUARDT_ELLIP,100,1e-2);
             time_profiles_.stop();
             break;
         default:
@@ -214,7 +214,7 @@ uint_t PlaneRegistration::solve_gradient_all_poses(bool singleIteration)
 
         // 2) calculate Gradient
         MatX1 jacobian = MatX1::Zero(numberPoses_*6);
-        double  numberPoints, tau = 1.0 / (double)(numberPoses_-1);
+        double  numberPoints; //, tau = 1.0 / (double)(numberPoses_-1);
         for (uint_t t = 1 ; t < numberPoses_; ++t)
         {
             numberPoints = 0.0;
@@ -241,7 +241,6 @@ uint_t PlaneRegistration::solve_gradient_all_poses(bool singleIteration)
 uint_t PlaneRegistration::solve_quaternion_plane()
 {
     solveIters_ = 0;
-    double previousError = 1e20, diffError = 10;
 
     // TODO create factor graph or call dense solver?
 
@@ -434,10 +433,15 @@ std::vector<double> PlaneRegistration::print_evaluate()
         case SolveMode::LM_ELLIP:
             gradient__ = gradient_;
             hessian__ = hessian_;
+            break;
+        case SolveMode::INITIALIZE:
+        case SolveMode::GN_CLAMPED_HESSIAN:
+            std::cout << "PlaneRegistration::print_evaluate: Not handled" << std::endl;
+            break;
     }
 
     // Normals on planes, check for rank
-    for (auto plane : planes_)
+    for (auto &&plane : planes_)
     {
         Mat41 pi = plane.second->get_plane();
         //std::cout << "plane : \n" << pi << std::endl;
@@ -497,9 +501,10 @@ void PlaneRegistration::calculate_gradient_hessian()
     }
 }
 
-void PlaneRegistration::update_state(const MatX1 &dx)
+void PlaneRegistration::update_state()
 {
-    trajectory_->back().update_lhs(dx);
+    // XXX this ws before passed as a function argument. Deprecated?
+    trajectory_->back().update_lhs(dx_);
     Mat61 xiFinal = trajectory_->back().ln_vee();
     double  tau = 1.0 / (double)(numberPoses_-1);
     Mat61 dxi;

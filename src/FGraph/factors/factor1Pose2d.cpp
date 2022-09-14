@@ -28,8 +28,8 @@
 using namespace mrob;
 
 Factor1Pose2d::Factor1Pose2d(const Mat31 &observation, std::shared_ptr<Node> &n1,
-        const Mat3 &obsInf) :
-        Factor(3, 3), obs_(observation), W_(obsInf), J_(Mat3::Zero())
+        const Mat3 &obsInf, Factor::robustFactorType robust_type) :
+        Factor(3, 3, robust_type), obs_(observation), W_(obsInf), J_(Mat3::Zero())
 {
     neighbourNodes_.push_back(n1);
 }
@@ -43,6 +43,7 @@ void Factor1Pose2d::evaluate_jacobians()
 void Factor1Pose2d::evaluate_residuals()
 {
     r_ = get_neighbour_nodes()->at(0).get()->get_state() - obs_;
+    r_(2) = wrap_angle(r_(2));
 }
 
 void Factor1Pose2d::evaluate_chi2()

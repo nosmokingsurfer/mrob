@@ -28,7 +28,7 @@
 using namespace mrob;
 
 Optimizer::Optimizer(matData_t solutionTolerance, matData_t lambda) :
-        solutionTolerance_(solutionTolerance), lambda_(lambda)
+        solutionTolerance_(solutionTolerance), max_iters_(1e2), lambda_(lambda)
 {
 
 }
@@ -39,9 +39,10 @@ Optimizer::~Optimizer()
 }
 
 
- uint_t Optimizer::optimize(optimMethod method, double lambda)
+ uint_t Optimizer::solve(optimMethod method, uint_t max_iters, double lambda)
 {
     optimization_method_ = method;
+    max_iters_ = max_iters;
     switch(method)
     {
       case NEWTON_RAPHSON:
@@ -55,7 +56,7 @@ Optimizer::~Optimizer()
 }
 
 
-uint_t Optimizer::optimize_newton_raphson_one_iteration(bool useLambda)
+uint_t OptimizerDense::optimize_newton_raphson_one_iteration(bool useLambda)
 {
     // 1) build problem: Gradient and Hessian and re-evaluates
     calculate_gradient_hessian();
@@ -63,12 +64,12 @@ uint_t Optimizer::optimize_newton_raphson_one_iteration(bool useLambda)
     {
         if (optimization_method_ == LEVENBERG_MARQUARDT_SPHER)
         {
-            for (uint_t i = 0; i < hessian_.diagonalSize() ; ++i)
+            for (Eigen::Index i = 0; i < hessian_.diagonalSize() ; ++i)
                 hessian_(i,i) += lambda_;
         }
         if (optimization_method_ == LEVENBERG_MARQUARDT_ELLIP)
         {
-            for (uint_t i = 0; i < hessian_.diagonalSize() ; ++i)
+            for (Eigen::Index i = 0; i < hessian_.diagonalSize() ; ++i)
                 hessian_(i,i) *= 1.0 + lambda_;
         }
     }
@@ -76,7 +77,7 @@ uint_t Optimizer::optimize_newton_raphson_one_iteration(bool useLambda)
     // 2) dx = - h^-1 * grad XXX test for singularities?
     dx_ = - hessian_.inverse() * gradient_;
     // 3) update the solution
-    this->update_state(dx_);
+    this->update_state();
 
     return 1;
 }
@@ -94,7 +95,7 @@ uint_t Optimizer::optimize_newton_raphson()
         diff_error = previous_error - current_error;
         previous_error = current_error;
         iters++;
-    }while(fabs(diff_error) > solutionTolerance_ && iters < 1e2);
+    }while(fabs(diff_error) > solutionTolerance_ && iters < max_iters_);
 
 
     return iters;
@@ -107,7 +108,7 @@ uint_t Optimizer::optimize_levenberg_marquardt()
     matData_t sigma1(0.25), sigma2(0.8);// 0 < sigma1 < sigma2 < 1
     matData_t beta1(2.0), beta2(0.25); // lambda updates multiplier values, beta1 > 1 > beta2 >0
     uint_t iters = 0;
-    matData_t previous_error = calculate_error(), diff_error, current_error;
+    matData_t previous_error = calculate_error();
     bool improvement; // variable for controlling when no update is done and number of iterations is exceeded.
     do
     {
@@ -115,12 +116,10 @@ uint_t Optimizer::optimize_levenberg_marquardt()
         // 1) solve the current subproblem by Newton Raphson
         this->bookkeep_state();
         optimize_newton_raphson_one_iteration(true);
-        current_error = calculate_error();
+        auto current_error = calculate_error();
         //std::cout << "iter " << iters << ", error = " << current_error << ", lambda = "<< lambda_ << std::endl;
-        diff_error = previous_error - current_error;
+        auto diff_error = previous_error - current_error;
         improvement = true;
-
-        //TODO there is an error here, diff error is correct, but the current state get changed! how
 
         // 2) Check for convergence, hillclimb
         if (diff_error < 0)
@@ -142,7 +141,8 @@ uint_t Optimizer::optimize_levenberg_marquardt()
         //     err(x_k) - m_k(dx)
         // where m_k is the quadratized model m_k(dx) = err(x_k) + dx'*Grad r + 0.5 dx'(Hessian + LM)dx
         // => f = d err / (-dx'*Grad r - 0.5 dx'(Hessian + LM)dx)
-        matData_t modelFidelity = diff_error / (-dx_.dot(gradient_) - 0.5*dx_.dot(hessian_* dx_));
+        //matData_t modelFidelity = diff_error / (-dx_.dot(gradient_) - 0.5*dx_.dot(hessian_* dx_));
+        matData_t modelFidelity = calculate_model_fidelity(diff_error);
 
 
         // 4) update lambda
@@ -151,7 +151,7 @@ uint_t Optimizer::optimize_levenberg_marquardt()
         if (modelFidelity > sigma2)
             lambda_ *= beta2;
 
-    }while(iters < 1e2);
+    }while(iters < max_iters_);
 
     if (!improvement)
     {
@@ -165,4 +165,20 @@ uint_t Optimizer::optimize_levenberg_marquardt()
               << std::endl;
 
     return iters;
+}
+
+OptimizerDense::OptimizerDense(matData_t solutionTolerance, matData_t lambda):
+        Optimizer(solutionTolerance, lambda)
+{
+
+}
+OptimizerDense::~OptimizerDense()
+{
+
+}
+
+matData_t OptimizerDense::calculate_model_fidelity(matData_t diff_error)
+{
+
+    return diff_error / (-dx_.dot(gradient_) - 0.5*dx_.dot(hessian_* dx_));
 }

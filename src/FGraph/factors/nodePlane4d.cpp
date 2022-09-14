@@ -24,12 +24,12 @@
 
 #include "mrob/factors/nodePlane4d.hpp"
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 using namespace mrob;
 
-NodePlane4d::NodePlane4d(const Mat41 &initial_x):
-    Node(4), state_(initial_x), auxiliaryState_(initial_x)
+NodePlane4d::NodePlane4d(const Mat41 &initial_x, Node::nodeMode mode):
+    Node(4,mode), state_(initial_x), auxiliaryState_(initial_x)
 {
     assert(initial_x.rows() == 4 && "NodePlane4d:: Incorrect dimension on initial state rows" );
     assert(initial_x.cols() == 1 && "NodePlane4d:: Incorrect dimension on initial state cols" );
@@ -38,22 +38,16 @@ NodePlane4d::NodePlane4d(const Mat41 &initial_x):
     auxiliaryState_.head(3).normalize();
 }
 
-NodePlane4d::~NodePlane4d()
-{
 
-}
 
 void NodePlane4d::update(const Eigen::Ref<const MatX1> &dx)
 {
-    Mat41 dpi = dx;
     state_ += dx;
-    //state_.head(3).normalize();
     state_.head(3).normalize();
 }
 
 void NodePlane4d::update_from_auxiliary(const Eigen::Ref<const MatX1> &dx)
 {
-    Mat41 dpi = dx;
     state_ = auxiliaryState_ + dx;
     state_.head(3).normalize();
 }

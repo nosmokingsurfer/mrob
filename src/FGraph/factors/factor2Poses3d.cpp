@@ -30,8 +30,9 @@ using namespace mrob;
 
 
 Factor2Poses3d::Factor2Poses3d(const Mat4 &observation, std::shared_ptr<Node> &nodeOrigin,
-        std::shared_ptr<Node> &nodeTarget, const Mat6 &obsInf, bool updateNodeTarget):
-        Factor(6,12), Tobs_(observation), W_(obsInf)
+        std::shared_ptr<Node> &nodeTarget, const Mat6 &obsInf, bool updateNodeTarget,
+        Factor::robustFactorType robust_type):
+        Factor(6,12,robust_type), Tobs_(observation), W_(obsInf)
 {
     if (nodeOrigin->get_id() < nodeTarget->get_id())
     {
@@ -56,8 +57,9 @@ Factor2Poses3d::Factor2Poses3d(const Mat4 &observation, std::shared_ptr<Node> &n
 }
 
 Factor2Poses3d::Factor2Poses3d(const SE3 &observation, std::shared_ptr<Node> &nodeOrigin,
-        std::shared_ptr<Node> &nodeTarget, const Mat6 &obsInf, bool updateNodeTarget):
-        Factor(6,12), Tobs_(observation), W_(obsInf)
+        std::shared_ptr<Node> &nodeTarget, const Mat6 &obsInf, bool updateNodeTarget,
+        Factor::robustFactorType robust_type):
+        Factor(6,12, robust_type), Tobs_(observation), W_(obsInf)
 {
     if (nodeOrigin->get_id() < nodeTarget->get_id())
     {
@@ -81,9 +83,6 @@ Factor2Poses3d::Factor2Poses3d(const SE3 &observation, std::shared_ptr<Node> &no
     }
 }
 
-Factor2Poses3d::~Factor2Poses3d()
-{
-}
 
 void Factor2Poses3d::evaluate_residuals()
 {
@@ -116,7 +115,8 @@ void Factor2Poses3d::print() const
               << " \nand Information matrix\n" << W_
               << "\n Calculated Jacobian = \n" << J_
               << "\n Chi2 error = " << chi2_
-              << " and neighbour Nodes " << neighbourNodes_.size()
+              << " and neighbour Node ids: " << neighbourNodes_[0]->get_id()
+              << ", " << neighbourNodes_[1]->get_id()
               << std::endl;
 }
 

@@ -24,40 +24,31 @@
 #include "mrob/factors/nodeLandmark2d.hpp"
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 
 using namespace mrob;
 
-NodeLandmark2d::NodeLandmark2d(const Mat21 &initial_x) :
-        Node(2), state_(initial_x), auxiliaryState_(initial_x)
+NodeLandmark2d::NodeLandmark2d(const Mat21 &initial_x, Node::nodeMode mode) :
+        Node(2, mode), state_(initial_x), auxiliaryState_(initial_x)
 {
     assert(initial_x.rows() == 2 && "NodeLandmark2d:: Incorrect dimension on initial state rows" );
     assert(initial_x.cols() == 1 && "NodeLandmark2d:: Incorrect dimension on initial state cols" );
 }
 
-NodeLandmark2d::~NodeLandmark2d()
-{
-
-}
 
 void NodeLandmark2d::update(const Eigen::Ref<const MatX1> &dx)
 {
-    //TODO test cast
-    Mat21 dxf = dx;
-    state_ += dxf;
+    state_ += dx;
 }
 
 void NodeLandmark2d::update_from_auxiliary(const Eigen::Ref<const MatX1> &dx)
 {
-    //TODO test cast
-    Mat21 dxf = dx;
-    state_ = auxiliaryState_ + dxf;
+    state_ = auxiliaryState_ + dx;
 }
 
 void NodeLandmark2d::set_state(const Eigen::Ref<const MatX> &x)
 {
-    // cast is done by Eigen
     state_ = x;
 }
 

@@ -31,8 +31,9 @@ using namespace mrob;
 
 
 Factor1Pose1Landmark2d::Factor1Pose1Landmark2d(const Mat21 &observation, std::shared_ptr<Node> &nodePose,
-        std::shared_ptr<Node> &nodeLandmark, const Mat2 &obsInf, bool initializeLandmark):
-        Factor(2,5), obs_(observation), r_(Mat21::Zero()),landmark_(Mat21::Zero()),
+        std::shared_ptr<Node> &nodeLandmark, const Mat2 &obsInf, bool initializeLandmark,
+        Factor::robustFactorType robust_type):
+        Factor(2,5, robust_type), obs_(observation), r_(Mat21::Zero()),landmark_(Mat21::Zero()),
         state_(Mat31::Zero()),dx_(0.0), dy_(0.0), q_(0.0),
         W_(obsInf), reversedNodeOrder_(false)
 {
@@ -52,13 +53,14 @@ Factor1Pose1Landmark2d::Factor1Pose1Landmark2d(const Mat21 &observation, std::sh
 
     if (initializeLandmark)
     {
-        // TODO Initialize landmark value to whatever observation we see from current pose
+        Mat31 x = nodePose->get_state();
+        Mat21 dl;
+        dl << std::cos(obs_(1)+x(2)), std::sin(obs_(1)+x(2));
+        Mat21 land = x.head(2) + obs_(0)*dl;
+        nodeLandmark->set_state(land);
     }
 }
 
-Factor1Pose1Landmark2d::~Factor1Pose1Landmark2d()
-{
-}
 
 void Factor1Pose1Landmark2d::evaluate_residuals()
 {
@@ -71,17 +73,22 @@ void Factor1Pose1Landmark2d::evaluate_residuals()
         poseIndex = 1;
     }
     // From the local frame we observe the landmark
-    // TODO LM needs too many iterations, check once again gradients
     state_ = get_neighbour_nodes()->at(poseIndex)->get_state();
     landmark_ = get_neighbour_nodes()->at(landmarkIndex)->get_state();
     dx_ = landmark_(0) - state_(0);
     dy_ = landmark_(1) - state_(1);
     q_ = dx_*dx_ + dy_*dy_;
+
+    if (q_ < 1e-6)
+    {
+        r_.setZero();
+        return;
+    }
+    // r = [range, bearing]
     r_ << std::sqrt(q_),
          std::atan2(dy_,dx_) - state_(2);
-    r_ -= obs_;
-    r_(2) = wrap_angle(r_(2));
-
+    r_ = r_-obs_;
+    r_(1) = wrap_angle(r_(1));
 }
 void Factor1Pose1Landmark2d::evaluate_jacobians()
 {
@@ -93,6 +100,12 @@ void Factor1Pose1Landmark2d::evaluate_jacobians()
     Mat<2,2> Jl = Mat<2,2>::Zero();
     Jl << dx_/sqrt_q, dy_/sqrt_q,
           -dy_/q_,    dx_/q_;
+    // If that happens, the configuration is singular and no valid angle can be calcualted
+    if (q_ < 1e-6)
+    {
+        Jx.setIdentity();
+        Jl.setIdentity();
+    }
     if (!reversedNodeOrder_)
     {
         J_.topLeftCorner<2,3>() = Jx;

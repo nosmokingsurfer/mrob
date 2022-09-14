@@ -49,9 +49,6 @@ namespace mrob{
  * z = [range,bearing] is a 2d vector, composed of a range and bearing in the local frame.
  * l is a 2d point encoding the landmark position l = [x,y]
  *
- * and the residual is thus:
- *   r = T-1*l - z
- *
  *
  * Constructor functions will be overloaded to include the pointers of the nodes,
  * The convention is 2d pose, we observe node destination,
@@ -65,8 +62,9 @@ class Factor1Pose1Landmark2d : public Factor
 {
   public:
     Factor1Pose1Landmark2d(const Mat21 &observation, std::shared_ptr<Node> &nodePose,
-            std::shared_ptr<Node> &nodeLandmark, const Mat2 &obsInf, bool initializeLandmark=false);
-    ~Factor1Pose1Landmark2d();
+            std::shared_ptr<Node> &nodeLandmark, const Mat2 &obsInf, bool initializeLandmark=false,
+            Factor::robustFactorType robust_type = Factor::robustFactorType::QUADRATIC);
+    ~Factor1Pose1Landmark2d() override = default;
     /**
      * Jacobians are not evaluated, just the residuals
      */

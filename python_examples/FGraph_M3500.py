@@ -14,6 +14,8 @@ def print_2d_graph(graph):
     x = graph.get_estimated_state()
     prev_p = np.zeros(3)
     plt.figure()
+    p = x[0]
+    plt.plot(p[0],p[0],'ob') 
     for p in x:
         #plt.plot(p[0],p[1],'ob')
         plt.plot((prev_p[0],p[0]),(prev_p[1],p[1]) , '-b')
@@ -48,11 +50,10 @@ with open('../benchmarks/M3500.txt', 'r') as file:
 #print(factors_dictionary)
 
 # Initialize FG
-graph = mrob.fgraph.FGraph()
+graph = mrob.FGraph()
 x = np.zeros(3)
-n = graph.add_node_pose_2d(x)
+n = graph.add_node_pose_2d(x,mrob.NODE_ANCHOR)
 print('node 0 id = ', n) # id starts at 1
-graph.add_factor_1pose_2d(x,n,1e9*np.identity(3))
 processing_time = []
 
 # start events, we solve for each node, adding it and it corresponding factors
@@ -96,28 +97,41 @@ print('Initial problem drawn')
 print_2d_graph(graph)
 print('current initial chi2 = ', graph.chi2() )
 start = time.time()
-graph.solve(mrob.fgraph.LM, 50)
+graph.solve(mrob.LM, 50)
 end = time.time()
 print('\nLM chi2 = ', graph.chi2() , ', total time on calculation [s] = ', 1e0*(end - start))
 print('solution drawn')
 print_2d_graph(graph)
 
 
+if 0:
+    # Information matrix
+    import matplotlib.pyplot as plt
+    L = graph.get_information_matrix()
+    plt.spy(L, marker='o', markersize=5)
+    plt.title('Information matrix $\Lambda$')
+    plt.show()
+    
+    # ch2
+    chi2_array = graph.get_chi2_array()
+    plt.plot(chi2_array)
+    plt.show()
+
 # alternative use Gauss-Newton
 if 0:
     graph.solve(mrob.fgraph.GN)
     print('Iter 0 chi2 = ', graph.chi2() )
-    graph.solve(mrob.fgraph.GN)
+    graph.solve(mrob.GN)
     print('Iter 1 chi2 = ', graph.chi2() )
-    graph.solve(mrob.fgraph.GN)
+    graph.solve(mrob.GN)
     print('Iter 2 chi2 = ', graph.chi2() )
-    graph.solve(mrob.fgraph.GN)
+    graph.solve(mrob.GN)
     print('Iter 3 chi2 = ', graph.chi2() )
     print_2d_graph(graph)
 
-    graph.solve(mrob.fgraph.GN)
+    graph.solve(mrob.GN)
     print('Iter 4 chi2 = ', graph.chi2() )
-    graph.solve(mrob.fgraph.GN)
+    graph.solve(mrob.GN)
     print('Iter 5 chi2 = ', graph.chi2() ) #already converges
     print_2d_graph(graph)
 

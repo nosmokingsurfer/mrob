@@ -22,7 +22,7 @@
  */
 
 #ifndef NODELANDMARK3D_HPP_
-#define NODELANDMARK_HPP_
+#define NODELANDMARK3D_HPP_
 
 #include "mrob/matrix_base.hpp"
 #include "mrob/SE3.hpp" //requires including and linking SE3 library
@@ -36,9 +36,9 @@ class NodeLandmark3d : public Node
     /**
      * For initialization, requires an initial estimation of the state.
      */
-    NodeLandmark3d(const Mat31 &initial_x);
+    NodeLandmark3d(const Mat31 &initial_x, Node::nodeMode mode = STANDARD);
     //NodePose3d(const SE3 &initial_T);
-    virtual ~NodeLandmark3d();
+    virtual ~NodeLandmark3d()  override = default;
 
     virtual void update(const Eigen::Ref<const MatX1> &dx);
     virtual void update_from_auxiliary(const Eigen::Ref<const MatX1> &dx);
@@ -62,4 +62,4 @@ class NodeLandmark3d : public Node
 }
 
 
-#endif /* NODEPOSE3D_HPP_ */
+#endif /* NODELANDMARK3D_HPP_ */

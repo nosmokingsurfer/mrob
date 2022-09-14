@@ -26,7 +26,7 @@
 
 #include <vector>
 #include <memory>
-#include <assert.h>
+#include <cassert>
 
 #include "mrob/matrix_base.hpp"
 #include "mrob/factor.hpp"
@@ -51,11 +51,18 @@ class Factor;
  *	Two states are kept at the same time:
  *	- (principal) state: used for factors evaluations, errors and Jacobians
  *	- auxiliary state: a book-keep state useful for partial updates
+ *
+ *	Node mode refer on how they will be processed further in the FGraph:
+ *	- Standard: process as usual
+ *	- Anchor: This node will be constant and insensitive to gradients (not processed). It must be correctly initialized
+ *	- Schur_margi: Node to be marginalized when using Schur
  */
 
 class Node{
   public:
-    Node(uint_t dim, uint_t potNumberFactors = 5);
+    enum nodeMode{STANDARD = 0, ANCHOR, SCHUR_MARGI};
+
+    Node(uint_t dim, nodeMode mode = STANDARD);
     virtual ~Node();
     /**
      * The update function, given any block vector it updates
@@ -98,10 +105,10 @@ class Node{
      * metal implementation, or for error evaluation
      */
     virtual const Eigen::Ref<const MatX> get_auxiliary_state() const = 0;
-    virtual void print() const {};
-    id_t get_id() const {return id_;};
-    void set_id(id_t id) {id_ = id;};
-    uint_t get_dim(void) const {return dim_;};
+    virtual void print() const {}
+    factor_id_t get_id() const {return id_;}
+    void set_id(factor_id_t id) {id_ = id;}
+    factor_id_t get_dim(void) const {return dim_;}
     /**
      * Adds a factor to the list of factors connected to this node.
      */
@@ -111,15 +118,21 @@ class Node{
      * so use only when necessary.
      */
     virtual bool rm_factor(std::shared_ptr<Factor> &factor);
-    void clear() {neighbourFactors_.clear();};
+    void clear() {neighbourFactors_.clear();}
     const std::vector<std::shared_ptr<Factor> >*
-            get_neighbour_factors(void) const {return &neighbourFactors_;};
+            get_neighbour_factors(void) const {return &neighbourFactors_;}
+
+
+    void set_node_mode(nodeMode mode){node_mode_ = mode;}
+    nodeMode get_node_mode(){return node_mode_;}
+
 
   protected:
     // no oder needed here
     std::vector<std::shared_ptr<Factor> > neighbourFactors_;
-    id_t id_;
+    factor_id_t id_;
     uint_t dim_;
+    nodeMode node_mode_;
     /**
      * On this pure abstract class we can't define a vector state,
      * but we will return and process Ref<> to dynamic matrices.

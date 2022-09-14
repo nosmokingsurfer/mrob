@@ -83,11 +83,11 @@ public:
     /**
      * This enums optimization methods available:
      *  - Gauss Newton
-     *  - Levenberg Marquardt (trust-region-like for lambda adjustment)
+     *  - Levenberg Marquardt (trust-region-like for lambda adjustment) TODO LM elliptical?
      */
     enum optimMethod{GN=0, LM};
 
-    FGraphSolve(matrixMethod method = ADJ, optimMethod optim = GN);
+    FGraphSolve(matrixMethod method = ADJ);
     virtual ~FGraphSolve();
 
     /**
@@ -95,7 +95,7 @@ public:
      * ultimately on the function input,
      * by default optim method is Gauss Newton
      */
-    void solve(optimMethod method = GN, uint_t maxIters = 20);
+    void solve(optimMethod method = GN, uint_t maxIters = 20, matData_t lambda = 1e-6, matData_t solutionTolerance = 1e-2);
     /**
      * Evaluates the current solution chi2.
      *
@@ -116,6 +116,30 @@ public:
     void set_build_matrix_method(matrixMethod method) {matrixMethod_ = method;};
     matrixMethod get_build_matrix_method() { return matrixMethod_;};
 
+    /**
+     * Returns a copy to the information matrix.
+     * TODO If true, it re-evaluates the problem
+     */
+    SMatCol get_information_matrix() { return L_;}
+    /**
+     * Returns a copy to the information matrix.
+     * TODO If true, it re-evaluates the problem
+     */
+    SMatCol get_adjacency_matrix() { return A_;}
+    /**
+     * Returns a copy to the W matrix.
+     * TODO If true, it re-evaluates the problem
+     */
+    SMatCol get_W_matrix() { return W_;}
+    /**
+     * Returns a copy to the processed residuals in state space b = A'Wr.
+     * TODO If true, it re-evaluates the problem
+     */
+    MatX1 get_vector_b() { return b_;}
+    /**
+     * Returns a vector of chi2 values for each of the factors.
+     */
+    MatX1 get_chi2_array();
 
 protected:
     /**
@@ -193,10 +217,9 @@ protected:
 
     // Variables for solving the FGraph
     matrixMethod matrixMethod_;
-    optimMethod optimMethod_;
 
-    uint_t N_; // total number of state variables
-    uint_t M_; // total number of observation variables
+    factor_id_t N_; // total number of state variables
+    factor_id_t M_; // total number of observation variables
 
     SMatRow A_; //Adjacency matrix, as a Row sparse matrix
     SMatRow W_; //A block diagonal information matrix. For types Adjacency it calculates its block transposed squared root

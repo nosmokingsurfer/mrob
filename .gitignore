@@ -18,3 +18,11 @@ bin/
 *.png
 *.pdf
 *.pkl
+.vscode
+doc/*
+__pycache__
+.*
+
+mrob
+dist/
+mrob.egg-info/

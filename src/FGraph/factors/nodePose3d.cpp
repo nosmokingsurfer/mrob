@@ -24,12 +24,12 @@
 #include "mrob/factors/nodePose3d.hpp"
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 using namespace mrob;
 
-NodePose3d::NodePose3d(const Mat4 &initial_x) :
-        Node(6), state_(initial_x), auxiliaryState_(initial_x)
+NodePose3d::NodePose3d(const Mat4 &initial_x, Node::nodeMode mode) :
+        Node(6,mode), state_(initial_x), auxiliaryState_(initial_x)
 {
     // TODO remove me
     //assert(initial_x.rows() == 6 && "NodePose3d:: Incorrect dimension on initial state rows" );
@@ -37,16 +37,12 @@ NodePose3d::NodePose3d(const Mat4 &initial_x) :
     assert(isSE3(initial_x) && "NodePose3d:: Incorrect initial state, not an element of SE3" );
 }
 
-NodePose3d::NodePose3d(const SE3 &initial_x) :
-		 Node(6), state_(initial_x), auxiliaryState_(initial_x)
+NodePose3d::NodePose3d(const SE3 &initial_x, Node::nodeMode mode) :
+		 Node(6, mode), state_(initial_x), auxiliaryState_(initial_x)
 {
 	assert(isSE3(initial_x.T()) && "NodePose3d:: Incorrect initial state, not an element of SE3" );
 }
 
-NodePose3d::~NodePose3d()
-{
-
-}
 
 void NodePose3d::update(const Eigen::Ref<const MatX1> &dx)
 {

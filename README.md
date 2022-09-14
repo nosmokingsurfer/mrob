@@ -1,5 +1,9 @@
+[![PyPi version](https://img.shields.io/pypi/v/mrob.svg)](https://pypi.org/project/mrob/)
+[![PyPi downloads](https://img.shields.io/pypi/dm/mrob.svg)](https://pypi.org/project/mrob/)
+[![Documentation Status](https://readthedocs.org/projects/mrob/badge/?version=latest)](https://mrob.readthedocs.io/en/latest/?badge=latest)
+
 <p align="center">
-  <img src="http://sites.skoltech.ru/app/data/uploads/sites/50/2018/02/mr_animate1.gif" width="450">
+  <img src="https://sites.skoltech.ru/app/data/uploads/sites/50/2018/02/mr_animate1.gif" width="450">
 </p>
 
 # MROB: Mobile Robotics library
@@ -25,6 +29,7 @@ The present library is meant to be a self-contained library. However, there are 
 * [pybind11](https://github.com/pybind/pybind11) (included as a submodule)
   - python3-distutils
   - python3-dev
+* [Catch2 v2.x branch](https://github.com/catchorg/Catch2/tree/v2.x) (included as a submodule)
 
 This is the list of required packages to install:
 `sudo apt install build-essential cmake python3-distutils python3-dev`
@@ -47,6 +52,15 @@ cd build
 cmake ..
 make -j
 ```
+
+If you need to use this library in Python code, you can install it using pip:
+`pip install mrob`
+
+**Note:** If your OS is Windows and you don't have Microsoft Visual C++ Redistributable package installed, 
+then you need to [install it](https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-160#visual-studio-2015-2017-2019-and-2022) additionally.
+If you are using a 32-bit Python, then install the package for the X86 architecture. 
+If you are using 64-bit Python, then install the package for the X64 architecture. 
+Don't be afraid to install both packages.
 
 
 ## License
